@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "functions": {
+    "api/check.js": {
+      "maxDuration": 15
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ]
+}

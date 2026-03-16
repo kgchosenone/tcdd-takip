@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="TCDD Takip">
+  <meta name="theme-color" content="#D62B2B">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <title>TCDD Bilet Takip</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --red: #D62B2B;
+      --bg: #f5f5f4;
+      --surface: #ffffff;
+      --surface2: #f5f5f4;
+      --border: rgba(0,0,0,0.1);
+      --border2: rgba(0,0,0,0.18);
+      --text: #1a1a18;
+      --text2: #6b6b67;
+      --text3: #a0a09c;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --green: #22c55e;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1a1a18;
+        --surface: #242422;
+        --surface2: #2e2e2c;
+        --border: rgba(255,255,255,0.08);
+        --border2: rgba(255,255,255,0.15);
+        --text: #f0f0ec;
+        --text2: #a0a09c;
+        --text3: #6b6b67;
+      }
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 2rem 1rem;
+      padding-top: max(2rem, env(safe-area-inset-top));
+      padding-bottom: max(2rem, env(safe-area-inset-bottom));
+      padding-left: max(1rem, env(safe-area-inset-left));
+      padding-right: max(1rem, env(safe-area-inset-right));
+    }
+    .app { width: 100%; max-width: 460px; }
+
+    .header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.5rem; }
+    .logo {
+      width: 40px; height: 40px;
+      background: var(--red);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .logo svg { width: 22px; height: 22px; }
+    .header-text h1 { font-size: 18px; font-weight: 600; }
+    .header-text p { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+    .card {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .card-title {
+      font-size: 11px; color: var(--text3);
+      text-transform: uppercase; letter-spacing: 0.06em;
+      margin-bottom: 12px;
+    }
+
+    .route-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .route-icon {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: var(--surface2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0;
+    }
+    .route-field { flex: 1; }
+    .field-label { font-size: 11px; color: var(--text3); margin-bottom: 4px; }
+
+    select, input[type="date"] {
+      width: 100%; padding: 9px 10px;
+      font-size: 14px;
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius-sm);
+      background: var(--surface2);
+      color: var(--text);
+      font-family: inherit;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      cursor: pointer;
+    }
+    select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%23a0a09c' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; }
+    select:focus, input[type="date"]:focus { border-color: var(--red); }
+
+    .arrow-mid { text-align: center; color: var(--text3); font-size: 18px; margin: 2px 0; }
+
+    .date-row { margin-top: 10px; }
+
+    .setting-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; }
+    .setting-row + .setting-row { border-top: 0.5px solid var(--border); }
+    .setting-label { font-size: 13px; }
+    .setting-value { font-size: 13px; font-weight: 500; }
+
+    input[type="range"] {
+      width: 100%; height: 4px; margin: 6px 0 4px;
+      accent-color: var(--red); cursor: pointer;
+    }
+    .range-hint { font-size: 11px; color: var(--text3); }
+
+    .toggle { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .track { position: absolute; inset: 0; background: var(--border2); border-radius: 22px; cursor: pointer; transition: background .2s; }
+    .toggle input:checked + .track { background: var(--red); }
+    .track::before { content: ''; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: transform .2s; }
+    .toggle input:checked + .track::before { transform: translateX(18px); }
+
+    .start-btn {
+      width: 100%; padding: 12px;
+      background: var(--red); color: white; border: none;
+      border-radius: var(--radius-sm);
+      font-size: 15px; font-weight: 500;
+      cursor: pointer; font-family: inherit;
+      transition: opacity .15s;
+    }
+    .start-btn:hover { opacity: 0.88; }
+
+    /* Status section */
+    #status-section { display: none; }
+    #status-section.visible { display: block; }
+
+    .status-bar {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; border-radius: var(--radius-sm);
+      background: var(--surface2);
+      margin-bottom: 10px;
+    }
+    .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex-shrink: 0; animation: blink 1.5s infinite; }
+    .pulse.idle { background: var(--border2); animation: none; }
+    @keyframes blink { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.8)} }
+    .status-text { font-size: 13px; color: var(--text2); }
+    .status-text strong { color: var(--text); font-weight: 500; }
+
+    .counters { display: flex; gap: 8px; margin-bottom: 10px; }
+    .counter-card { flex: 1; background: var(--surface2); border-radius: var(--radius-sm); padding: 8px 10px; text-align: center; }
+    .counter-num { font-size: 22px; font-weight: 500; }
+    .counter-lbl { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+    .log { border: 0.5px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+    .log-head {
+      padding: 7px 12px; background: var(--surface2);
+      font-size: 11px; color: var(--text3);
+      text-transform: uppercase; letter-spacing: 0.05em;
+      border-bottom: 0.5px solid var(--border);
+      display: flex; justify-content: space-between;
+    }
+    .log-body { max-height: 180px; overflow-y: auto; }
+    .log-row { padding: 7px 12px; font-size: 12px; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; gap: 8px; }
+    .log-row:last-child { border-bottom: none; }
+    .log-t { font-family: monospace; font-size: 11px; color: var(--text3); min-width: 46px; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .dot-idle { background: var(--border2); }
+    .dot-ok { background: var(--green); }
+    .dot-err { background: #ef4444; }
+    .log-msg { color: var(--text2); }
+    .log-msg.ok { color: #16a34a; font-weight: 500; }
+
+    .notif-card {
+      display: none; margin-top: 10px;
+      background: var(--surface2); border: 0.5px solid var(--border);
+      border-radius: var(--radius); padding: 10px 12px;
+    }
+    .notif-card.visible { display: flex; gap: 10px; align-items: flex-start; }
+    .notif-icon { width: 34px; height: 34px; background: var(--red); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .notif-title { font-size: 13px; font-weight: 500; }
+    .notif-desc { font-size: 12px; color: var(--text2); margin-top: 2px; }
+    .notif-time { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+    .stop-btn {
+      width: 100%; padding: 10px; margin-top: 10px;
+      background: transparent; color: var(--text2);
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius-sm);
+      font-size: 13px; cursor: pointer; font-family: inherit;
+    }
+    .stop-btn:hover { background: var(--surface2); }
+
+    .tcdd-link { text-align: center; margin-top: 1.5rem; }
+    .tcdd-link a { font-size: 12px; color: var(--text3); text-decoration: none; }
+    .tcdd-link a:hover { color: var(--red); }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="logo">
+      <svg viewBox="0 0 20 20" fill="none">
+        <rect x="3" y="13" width="14" height="2.5" rx="1" fill="white"/>
+        <rect x="6" y="10" width="8" height="3.5" rx="1" fill="white" opacity=".85"/>
+        <rect x="8" y="6" width="4" height="4.5" rx=".8" fill="white" opacity=".7"/>
+        <circle cx="6.5" cy="16" r="1.2" fill="white"/>
+        <circle cx="13.5" cy="16" r="1.2" fill="white"/>
+      </svg>
+    </div>
+    <div class="header-text">
+      <h1>TCDD Bilet Takip</h1>
+      <p>Bilet açılınca seni haberdar eder</p>
+    </div>
+  </div>
+
+  <!-- Setup -->
+  <div id="setup-section">
+    <div class="card">
+      <div class="card-title">Rota</div>
+      <div class="route-row">
+        <div class="route-icon">🚉</div>
+        <div class="route-field">
+          <div class="field-label">Kalkış</div>
+          <select id="from">
+            <option value="00030">Ankara Garı</option>
+            <option value="00008">İstanbul (Halkalı)</option>
+            <option value="00350">Söğütlüçeşme</option>
+            <option value="00092">İzmit</option>
+            <option value="00023">İzmir Basmane</option>
+            <option value="00001">Eskişehir</option>
+            <option value="00077">Konya</option>
+            <option value="00012">Bursa</option>
+          </select>
+        </div>
+      </div>
+      <div class="arrow-mid">↓</div>
+      <div class="route-row">
+        <div class="route-icon">🏁</div>
+        <div class="route-field">
+          <div class="field-label">Varış</div>
+          <select id="to">
+            <option value="00008">İstanbul (Halkalı)</option>
+            <option value="00350">Söğütlüçeşme</option>
+            <option value="00092">İzmit</option>
+            <option value="00030">Ankara Garı</option>
+            <option value="00023">İzmir Basmane</option>
+            <option value="00001">Eskişehir</option>
+            <option value="00077">Konya</option>
+            <option value="00012">Bursa</option>
+          </select>
+        </div>
+      </div>
+      <div class="date-row">
+        <div class="field-label">Tarih</div>
+        <input type="date" id="travel-date" value="2026-03-20">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Kontrol Ayarları</div>
+      <div class="setting-row">
+        <span class="setting-label">Kontrol aralığı</span>
+        <span class="setting-value" id="interval-display">60 sn</span>
+      </div>
+      <input type="range" id="interval" min="30" max="300" step="30" value="60">
+      <div class="range-hint">Daha kısa aralık → daha hızlı tespit, daha çok istek</div>
+      <div class="setting-row" style="margin-top:8px">
+        <span class="setting-label">Ses bildirimi</span>
+        <label class="toggle"><input type="checkbox" id="sound-toggle" checked><span class="track"></span></label>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Bulununca otomatik durdur</span>
+        <label class="toggle"><input type="checkbox" id="auto-stop" checked><span class="track"></span></label>
+      </div>
+    </div>
+
+    <button class="start-btn" onclick="startTracking()">Takibi Başlat</button>
+  </div>
+
+  <!-- Status -->
+  <div id="status-section">
+    <div class="status-bar">
+      <div class="pulse" id="pulse-dot"></div>
+      <div class="status-text" id="status-text"><strong>Takip ediliyor</strong></div>
+    </div>
+    <div class="counters">
+      <div class="counter-card"><div class="counter-num" id="check-count">0</div><div class="counter-lbl">kontrol</div></div>
+      <div class="counter-card"><div class="counter-num" id="next-check">60</div><div class="counter-lbl">sn sonra</div></div>
+      <div class="counter-card"><div class="counter-num" id="found-count">0</div><div class="counter-lbl">bulunan</div></div>
+    </div>
+    <div class="log">
+      <div class="log-head"><span>Kontrol günlüğü</span><span id="log-status">canlı</span></div>
+      <div class="log-body" id="log-body"></div>
+    </div>
+    <div class="notif-card" id="notif-card">
+      <div class="notif-icon">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+          <path d="M4 7.5A6 6 0 0116 7.5c0 4.5 2 5.5 2 5.5H2s2-1 2-5.5z" fill="white"/>
+          <path d="M8.5 17a1.5 1.5 0 003 0" fill="white"/>
+        </svg>
+      </div>
+      <div>
+        <div class="notif-title">Bilet bulundu!</div>
+        <div class="notif-desc" id="notif-desc"></div>
+        <div class="notif-time" id="notif-time">şimdi</div>
+      </div>
+    </div>
+    <button class="stop-btn" id="stop-btn" onclick="stopTracking(false)">Takibi Durdur</button>
+  </div>
+
+  <div class="tcdd-link"><a href="https://bilet.tcdd.gov.tr" target="_blank">bilet.tcdd.gov.tr →</a></div>
+</div>
+
+<script>
+  const stationNames = {
+    "00030":"Ankara Garı","00008":"İstanbul (Halkalı)",
+    "00350":"Söğütlüçeşme","00092":"İzmit",
+    "00023":"İzmir Basmane","00001":"Eskişehir",
+    "00077":"Konya","00012":"Bursa"
+  };
+  const months = ["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"];
+
+  let pollInterval, countdownTimer;
+  let checkCount=0, foundCount=0, intervalSec=60, remaining=60;
+
+  document.getElementById('interval').addEventListener('input', function() {
+    intervalSec = parseInt(this.value);
+    document.getElementById('interval-display').textContent = intervalSec + ' sn';
+  });
+
+  function ts() {
+    const n = new Date();
+    return [n.getHours(),n.getMinutes(),n.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':');
+  }
+  function fmtDate(s) { const d=new Date(s); return d.getDate()+' '+months[d.getMonth()]; }
+
+  function log(type, msg) {
+    const b = document.getElementById('log-body');
+    const row = document.createElement('div');
+    row.className = 'log-row';
+    const dotClass = type==='ok'?'dot-ok':type==='err'?'dot-err':'dot-idle';
+    const msgClass = type==='ok'?'ok':'';
+    row.innerHTML = `<span class="log-t">${ts()}</span><span class="dot ${dotClass}"></span><span class="log-msg ${msgClass}">${msg}</span>`;
+    b.insertBefore(row, b.firstChild);
+    if (b.children.length > 30) b.removeChild(b.lastChild);
+  }
+
+  function startTracking() {
+    const from = document.getElementById('from').value;
+    const to = document.getElementById('to').value;
+    const date = document.getElementById('travel-date').value;
+    if (from === to) { alert('Kalkış ve varış aynı olamaz.'); return; }
+
+    checkCount=0; foundCount=0;
+    intervalSec = parseInt(document.getElementById('interval').value);
+    remaining = intervalSec;
+
+    const fn = stationNames[from], tn = stationNames[to], ds = fmtDate(date);
+
+    document.getElementById('setup-section').style.display = 'none';
+    document.getElementById('status-section').classList.add('visible');
+    document.getElementById('status-text').innerHTML = `<strong>Takip ediliyor</strong> · ${fn} → ${tn}, ${ds}`;
+    document.getElementById('notif-card').classList.remove('visible');
+    document.getElementById('log-body').innerHTML = '';
+    document.getElementById('pulse-dot').classList.remove('idle');
+    document.getElementById('log-status').textContent = 'canlı';
+    document.getElementById('found-count').textContent = '0';
+    document.getElementById('check-count').textContent = '0';
+
+    // Request browser notification permission
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+
+    log('idle', 'Takip başlatıldı');
+    doCheck(fn, tn);
+
+    pollInterval = setInterval(() => { remaining=intervalSec; doCheck(fn, tn); }, intervalSec*1000);
+    countdownTimer = setInterval(() => {
+      remaining--;
+      if (remaining < 0) remaining = intervalSec;
+      document.getElementById('next-check').textContent = remaining;
+    }, 1000);
+  }
+
+  async function doCheck(fn, tn) {
+    checkCount++;
+    document.getElementById('check-count').textContent = checkCount;
+    document.getElementById('next-check').textContent = intervalSec;
+    remaining = intervalSec;
+
+    const from = document.getElementById('from').value;
+    const to = document.getElementById('to').value;
+    const date = document.getElementById('travel-date').value;
+
+    try {
+      const res = await fetch('/api/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ from, to, date })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        log('err', `API hatası: ${data.error || res.status}`);
+        return;
+      }
+
+      if (data.available && data.seferler.length > 0) {
+        foundCount++;
+        document.getElementById('found-count').textContent = foundCount;
+        const s = data.seferler[0];
+        const info = s.kalkisSaati ? ` · ${s.seferAdi} ${s.kalkisSaati}` : '';
+        log('ok', `Koltuk bulundu! ${fn} → ${tn}${info} (${s.bosKoltuk} koltuk)`);
+        showFound(fn, tn, s);
+        if (document.getElementById('auto-stop').checked) setTimeout(()=>stopTracking(true), 800);
+      } else {
+        log('idle', `Müsait koltuk yok · ${fn} → ${tn} (${data.toplamSefer || 0} sefer)`);
+      }
+
+    } catch (err) {
+      log('err', `Bağlantı hatası: ${err.message}`);
+    }
+  }
+
+  function showFound(fn, tn, s = {}) {
+    document.getElementById('notif-desc').textContent = `${fn} → ${tn} için koltuk açıldı`;
+    const detail = s.kalkisSaati ? `${s.seferAdi || 'YHT'} ${s.kalkisSaati}` : 'Sefer mevcut';
+    document.getElementById('notif-time').textContent = `şimdi · ${detail}`;
+    document.getElementById('notif-card').classList.add('visible');
+
+    // Browser notification
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('🚄 Bilet Bulundu!', {
+        body: `${fn} → ${tn} için koltuk açıldı`,
+        icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="%23D62B2B"/></svg>'
+      });
+    }
+
+    if (document.getElementById('sound-toggle').checked) {
+      try {
+        const ctx = new (window.AudioContext||window.webkitAudioContext)();
+        [880,1100,1320].forEach((f,i)=>{
+          const o=ctx.createOscillator(), g=ctx.createGain();
+          o.connect(g); g.connect(ctx.destination);
+          o.frequency.value=f; o.type='sine';
+          g.gain.setValueAtTime(0.18, ctx.currentTime+i*0.12);
+          g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+i*0.12+0.25);
+          o.start(ctx.currentTime+i*0.12); o.stop(ctx.currentTime+i*0.12+0.3);
+        });
+      } catch(e) {}
+    }
+  }
+
+  function stopTracking(found) {
+    clearInterval(pollInterval); clearInterval(countdownTimer);
+    document.getElementById('pulse-dot').classList.add('idle');
+    document.getElementById('log-status').textContent = 'durduruldu';
+    if (found) {
+      document.getElementById('status-text').innerHTML = '<strong>Bilet bulundu!</strong> · Takip tamamlandı';
+    } else {
+      log('idle', 'Takip durduruldu');
+    }
+    const btn = document.getElementById('stop-btn');
+    btn.textContent = 'Yeni Takip Başlat';
+    btn.onclick = resetApp;
+  }
+
+  function resetApp() {
+    demoTick = 0;
+    document.getElementById('setup-section').style.display = 'block';
+    document.getElementById('status-section').classList.remove('visible');
+    document.getElementById('pulse-dot').classList.remove('idle');
+    const btn = document.getElementById('stop-btn');
+    btn.textContent = 'Takibi Durdur';
+    btn.onclick = () => stopTracking(false);
+  }
+</script>
+</body>
+</html>
